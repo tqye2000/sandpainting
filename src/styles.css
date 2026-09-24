@@ -31,7 +31,7 @@ button { color: inherit; }
 .start-button::after { content:""; position:absolute; inset:-9px; border:1px solid rgba(245,213,163,.14); border-radius:50%; }
 .intro-note { margin-top:25px; font-size:10px; letter-spacing:.15em; color:rgba(250,225,184,.38); }
 
-.lyric { position:absolute; z-index:4; left:50%; bottom:clamp(108px,15vh,155px); transform:translateX(-50%); width:min(760px,80vw); text-align:center; pointer-events:none; transition: opacity .4s; }
+.lyric { position:absolute; z-index:4; left:50%; bottom:clamp(92px,11vh,120px); transform:translateX(-50%); width:min(760px,80vw); text-align:center; pointer-events:none; transition: opacity .4s; }
 .lyric-main { margin:0; font-family:"Ma Shan Zheng", cursive; font-size:clamp(26px,3.5vw,49px); letter-spacing:.12em; text-shadow:0 2px 22px rgba(30,12,3,.7); }
 .lyric-sub { margin:8px 0 0; font-size:10px; text-transform:uppercase; letter-spacing:.35em; color:rgba(251,225,180,.52); }
 
@@ -46,6 +46,7 @@ button { color: inherit; }
 .timeline::-webkit-slider-thumb { appearance:none; width:10px; height:10px; border-radius:50%; background:#f2d49f; box-shadow:0 0 0 4px rgba(242,212,159,.12); }
 .action-row { display:flex; gap:8px; }
 .small-action { appearance:none; border:0; background:transparent; color:rgba(252,230,194,.7); cursor:pointer; padding:9px; font-size:16px; }
+.small-action.mute.off { opacity:.4; text-decoration:line-through; }
 
 .export-panel { position:absolute; z-index:20; right:clamp(18px,4vw,60px); top:clamp(65px,11vh,110px); width:min(360px,calc(100% - 36px)); padding:27px; border:1px solid rgba(247,218,170,.22); background:rgba(29,17,12,.88); backdrop-filter:blur(22px); border-radius:3px; box-shadow:0 30px 80px rgba(0,0,0,.35); transform:translateY(-12px); opacity:0; visibility:hidden; transition:.3s; }
 .export-panel.open { transform:none; opacity:1; visibility:visible; }
@@ -64,7 +65,7 @@ button { color: inherit; }
   .brand span:last-child, .scene-count { display:none; }
   .controls { grid-template-columns:auto 1fr; gap:12px; }
   .action-row { position:absolute; right:0; bottom:52px; }
-  .lyric { bottom:120px; }
+  .lyric { bottom:106px; }
   .lyric-main { font-size:29px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration:.01ms!important; transition-duration:.01ms!important; } }

@@ -191,6 +191,9 @@ export class SandPainter {
     return 0;
   }
 
+  /** Start time (seconds) of every scene. */
+  get sceneTimes() { return this.tl.scenes.map(s => s.start); }
+
   resize(width = this.canvas.clientWidth, height = this.canvas.clientHeight, dpr = Math.min(devicePixelRatio || 1, 2)) {
     this.width = width; this.height = height; this.dpr = dpr;
     this.ratio = Math.min(width / DESIGN_W, height / DESIGN_H);

@@ -8,6 +8,7 @@
 - `src/strokes.ts` — 笔触规划：撒沙 `pour`、铺底 `fill`/`veil`、指尖刻线 `carve`、轻抹 `thin`、掌扫 `sweep`、清出亮面 `clear`。
 - `src/scenes.ts` — 八幕画面（真实剪影：飞檐木楼、松、椰树、人物、梧桐叶、小舟等）与确定性时间轴。
 - `src/sandPainter.ts` — 沙层画布、逐笔回放与回退快照、沙粒质感合成、灯箱光、画师的手。
+- `src/music.ts` — 背景音乐：原创的古筝风格五声调式配乐（主旋律、分解和弦、铺底和声、掌扫转场的沙声），按八幕时间轴确定性合成，播放、跳转与导出均与画面同步。
 
 详细设计见 [`docs/implementation-plan.md`](docs/implementation-plan.md)。
 
@@ -37,6 +38,8 @@ npm run build
 npm run export:video
 ```
 
-视频将输出至 `exports/`。可通过 `FPS`、`DURATION` 和 `APP_URL` 环境变量调整导出流程。
+视频将输出至 `exports/`（含音轨）。可通过 `FPS`、`DURATION` 和 `APP_URL` 环境变量调整导出流程。
 
-> 正式歌曲音轨应在取得使用授权后接入；当前版本保持静音播放与导出。
+## 背景音乐
+
+默认使用浏览器实时合成的原创配乐（非《思乡曲》原曲旋律）。取得正式歌曲授权后，将音轨放在 `public/music.mp3` 即可自动替换配乐（播放与两种导出均生效）。播放器右下角 ♪ 按钮可静音。
