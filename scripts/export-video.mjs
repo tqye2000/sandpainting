@@ -4,7 +4,7 @@ import { mkdir, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 
 const fps = Number(process.env.FPS || 30);
-const duration = Number(process.env.DURATION || 96);
+let duration = Number(process.env.DURATION || 0);
 const base = process.env.APP_URL || "http://localhost:4173";
 const frames = resolve(".video-frames");
 const output = resolve("exports/思乡曲-中秋沙画-1080p.mp4");
@@ -15,6 +15,8 @@ if (server) await new Promise(r => setTimeout(r, 1800));
 const browser = await chromium.launch({ headless: true });
 try {
   const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 }); await page.goto(base);
+  await page.waitForFunction(() => typeof window.sandDuration === "number");
+  if (!process.env.DURATION) duration = await page.evaluate(() => window.sandDuration);
   for (let i=0;i<=duration*fps;i++) { await page.evaluate(p => window.renderSandFrame?.(p), i/(duration*fps)); await page.screenshot({ path:`${frames}/frame-${String(i).padStart(6,"0")}.png` }); if(i%fps===0) process.stdout.write(`\rRendering ${Math.round(i/(duration*fps)*100)}%`); }
 } finally { await browser.close(); server?.kill(); }
 console.log("\nEncoding MP4…");

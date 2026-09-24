@@ -1,6 +1,15 @@
 # 思乡曲 · 中秋沙画
 
-一场由 Canvas 实时绘制的中秋沙画叙事。7,200 粒具有固定种子的沙粒会从画面上方落下，并在八幕之间经由风卷、手掌擦拭和重新聚沙完成连续变形。详细设计见 [`docs/implementation-plan.md`](docs/implementation-plan.md)。
+一场由 Canvas 实时绘制的中秋沙画叙事（约 2 分 12 秒）。画面像一位沙画师在灯箱上作画：一只可见的手逐幕撒沙、用指尖勾线、以掌心抹沙转场，逐笔画出明月、木楼、山水、渡海游子、椰林、慈母、梧桐叶和终幕的"两地同月"。
+
+实现要点：
+
+- `src/geometry.ts` — 噪声、样条、轮廓等几何工具。
+- `src/strokes.ts` — 笔触规划：撒沙 `pour`、铺底 `fill`/`veil`、指尖刻线 `carve`、轻抹 `thin`、掌扫 `sweep`、清出亮面 `clear`。
+- `src/scenes.ts` — 八幕画面（真实剪影：飞檐木楼、松、椰树、人物、梧桐叶、小舟等）与确定性时间轴。
+- `src/sandPainter.ts` — 沙层画布、逐笔回放与回退快照、沙粒质感合成、灯箱光、画师的手。
+
+详细设计见 [`docs/implementation-plan.md`](docs/implementation-plan.md)。
 
 ## 开发
 

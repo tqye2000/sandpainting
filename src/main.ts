@@ -1,7 +1,6 @@
 import "./styles.css";
 import { SandPainter, scenes } from "./sandPainter";
 
-const DURATION = 96;
 const app = document.querySelector<HTMLDivElement>("#app")!;
 app.innerHTML = `
   <section class="experience" aria-label="思乡曲中秋沙画播放器">
@@ -25,7 +24,7 @@ app.innerHTML = `
     <div class="lyric" aria-live="polite"><p class="lyric-main"></p><p class="lyric-sub"></p></div>
     <div class="controls">
       <button class="icon-button play" type="button" aria-label="播放"><span class="play-icon"></span></button>
-      <div class="timeline-wrap"><input class="timeline" type="range" min="0" max="1000" value="0" aria-label="播放进度"><div class="timeline-meta"><span class="scene-title">序 · 月升</span><span class="time">00:00 / 01:36</span></div></div>
+      <div class="timeline-wrap"><input class="timeline" type="range" min="0" max="1000" value="0" aria-label="播放进度"><div class="timeline-meta"><span class="scene-title">序 · 月升</span><span class="time">00:00 / 00:00</span></div></div>
       <div class="action-row"><button class="small-action restart" type="button" aria-label="重新播放">↺</button><button class="small-action fullscreen" type="button" aria-label="全屏">⛶</button></div>
     </div>
     <aside class="export-panel" aria-hidden="true">
@@ -40,6 +39,7 @@ app.innerHTML = `
 const $ = <T extends Element>(selector: string) => document.querySelector<T>(selector)!;
 const canvas = $(".sand-canvas") as HTMLCanvasElement;
 const painter = new SandPainter(canvas);
+const DURATION = painter.duration;
 const intro = $(".intro");
 const play = $(".play") as HTMLButtonElement;
 const slider = $(".timeline") as HTMLInputElement;
@@ -57,8 +57,8 @@ const setPlaying = (value: boolean) => {
   play.innerHTML = `<span class="${value ? "pause-icon" : "play-icon"}"></span>`;
 };
 const draw = () => {
-  const progress = Math.min(1, elapsed / DURATION); painter.render(progress);
-  const index = Math.min(scenes.length - 1, Math.floor(progress * scenes.length));
+  const progress = Math.min(1, elapsed / DURATION); painter.render(elapsed);
+  const index = painter.sceneAt(elapsed);
   const scene = scenes[index]; lyricMain.textContent = scene.lyric; lyricSub.textContent = scene.english;
   sceneTitle.textContent = scene.title; sceneCount.textContent = `${["壹","贰","叁","肆","伍","陆","柒","捌"][index]} / 捌`;
   slider.value = String(progress * 1000); slider.style.setProperty("--progress", `${progress*100}%`);
@@ -89,8 +89,9 @@ $(".export-start").addEventListener("click", async () => {
   const progress=$(".export-progress"), bar=$(".progress-bar i") as HTMLElement, pct=$(".export-progress b"); progress.classList.add("visible");
   recorder.onstop=()=>{ const url=URL.createObjectURL(new Blob(chunks,{type:mime})); const a=document.createElement("a");a.href=url;a.download=`思乡曲-中秋沙画-${ratio}.webm`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);progress.classList.remove("visible"); };
   recorder.start(); const started=performance.now();
-  const exportFrame=(now:number)=>{const t=Math.min(DURATION,(now-started)/1000);renderer.render(t/DURATION);const n=Math.round(t/DURATION*100);pct.textContent=`${n}%`;bar.style.width=`${n}%`;if(t<DURATION)requestAnimationFrame(exportFrame);else recorder.stop();};requestAnimationFrame(exportFrame);
+  const exportFrame=(now:number)=>{const t=Math.min(DURATION,(now-started)/1000);renderer.render(t);const n=Math.round(t/DURATION*100);pct.textContent=`${n}%`;bar.style.width=`${n}%`;if(t<DURATION)requestAnimationFrame(exportFrame);else recorder.stop();};requestAnimationFrame(exportFrame);
 });
 
-declare global { interface Window { renderSandFrame?: (progress:number)=>void; } }
+declare global { interface Window { renderSandFrame?: (progress:number)=>void; sandDuration?: number; } }
+window.sandDuration = DURATION;
 window.renderSandFrame = (progress:number) => { intro.classList.add("hidden"); elapsed=Math.max(0,Math.min(1,progress))*DURATION; setPlaying(false); draw(); };
