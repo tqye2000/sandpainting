@@ -1,6 +1,6 @@
 # 思乡曲 · 中秋沙画
 
-一场由 Canvas 实时绘制的中秋沙画叙事。详细设计见 [`docs/implementation-plan.md`](docs/implementation-plan.md)。
+一场由 Canvas 实时绘制的中秋沙画叙事。7,200 粒具有固定种子的沙粒会从画面上方落下，并在八幕之间经由风卷、手掌擦拭和重新聚沙完成连续变形。详细设计见 [`docs/implementation-plan.md`](docs/implementation-plan.md)。
 
 ## 开发
 

@@ -11,67 +11,158 @@ export const scenes: SceneInfo[] = [
   { title: "此意久长", lyric: "思乡，思乡　此情此意久长", english: "BENEATH ONE MOON, LOVE ENDURES" },
 ];
 
+type Grain = { x: number; y: number; size: number; tone: number };
+type Point = [number, number];
+const DESIGN_W = 1440;
+const DESIGN_H = 900;
+const GRAINS = 7200;
 const TAU = Math.PI * 2;
 const clamp = (n: number, a = 0, b = 1) => Math.max(a, Math.min(b, n));
-const ease = (n: number) => { n = clamp(n); return n * n * (3 - 2 * n); };
-const rand = (n: number) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+const smooth = (n: number) => { n = clamp(n); return n * n * (3 - 2 * n); };
+const outCubic = (n: number) => 1 - Math.pow(1 - clamp(n), 3);
+const random = (seed: number) => { const value = Math.sin(seed * 91.17 + 47.53) * 43758.5453; return value - Math.floor(value); };
+
+class SandSketch {
+  points: Point[] = [];
+  private seed = 0;
+
+  line(path: Point[], density = 2.4, width = 8) {
+    for (let n = 1; n < path.length; n++) {
+      const [ax, ay] = path[n - 1]; const [bx, by] = path[n];
+      const distance = Math.hypot(bx - ax, by - ay); const count = Math.max(1, Math.floor(distance * density));
+      for (let i = 0; i < count; i++) {
+        const t = i / count; const jitter = (random(this.seed++) - .5) * width;
+        const angle = Math.atan2(by - ay, bx - ax) + Math.PI / 2;
+        this.points.push([ax + (bx - ax) * t + Math.cos(angle) * jitter, ay + (by - ay) * t + Math.sin(angle) * jitter]);
+      }
+    }
+    return this;
+  }
+
+  ring(x: number, y: number, radius: number, thickness = 9, amount = 950) {
+    for (let i = 0; i < amount; i++) {
+      const angle = random(this.seed++) * TAU; const r = radius + (random(this.seed++) - .5) * thickness;
+      this.points.push([x + Math.cos(angle) * r, y + Math.sin(angle) * r]);
+    }
+    return this;
+  }
+
+  disc(x: number, y: number, radius: number, amount = 1300) {
+    for (let i = 0; i < amount; i++) {
+      const angle = random(this.seed++) * TAU; const r = Math.sqrt(random(this.seed++)) * radius;
+      if (random(this.seed++) > .14) this.points.push([x + Math.cos(angle) * r, y + Math.sin(angle) * r]);
+    }
+    return this;
+  }
+
+  person(x: number, y: number, scale = 1) {
+    this.ring(x, y - 142 * scale, 28 * scale, 7 * scale, 260);
+    this.line([[x - 18 * scale, y - 110 * scale], [x - 36 * scale, y], [x - 70 * scale, y + 105 * scale], [x, y + 70 * scale], [x + 70 * scale, y + 105 * scale], [x + 34 * scale, y], [x + 18 * scale, y - 110 * scale]], 2.5, 10 * scale);
+    return this;
+  }
+
+  waves(startY = 640, rows = 13) {
+    for (let row = 0; row < rows; row++) {
+      const path: Point[] = [];
+      for (let x = -20; x <= 1460; x += 24) path.push([x, startY + row * 13 + Math.sin(x * .018 + row * .8) * 6]);
+      this.line(path, .5, 3);
+    }
+    return this;
+  }
+}
+
+const mountains = (s: SandSketch, y = 560) => s
+  .line([[0,y],[125,y-65],[230,y-14],[360,y-130],[475,y-18],[600,y-90],[720,y-5],[855,y-100],[1010,y-10],[1140,y-75],[1290,y-10],[1440,y-62]], 1.6, 9)
+  .line([[0,y+65],[160,y],[290,y+55],[440,y-10],[610,y+50],[790,y-4],[940,y+45],[1100,y-18],[1260,y+40],[1440,y-5]], .8, 6);
+
+const leaf = (s: SandSketch, x: number, y: number, scale = 1, rotation = 0) => {
+  const transform = ([px, py]: Point): Point => [x + (px * Math.cos(rotation) - py * Math.sin(rotation)) * scale, y + (px * Math.sin(rotation) + py * Math.cos(rotation)) * scale];
+  const left: Point[] = [], right: Point[] = [];
+  for (let i=0;i<=24;i++) { const t=i/24; left.push(transform([-Math.sin(t*Math.PI)*48,t*100])); right.push(transform([Math.sin(t*Math.PI)*48,t*100])); }
+  s.line(left,1.7,5).line(right,1.7,5).line([transform([0,0]),transform([0,112])],1.8,4);
+};
+
+const buildScenes = () => {
+  const result: Point[][] = [];
+  let s = new SandSketch(); s.disc(720,270,105).line([[190,590],[330,510],[470,558],[610,465],[735,545],[875,480],[1015,555],[1170,490],[1300,550]],2.2,10).waves(675,5); result.push(s.points);
+  s = new SandSketch(); s.disc(1040,205,84); mountains(s); s.waves(670,7).line([[245,625],[245,380],[445,275],[650,380],[605,380],[605,625],[245,625]],2.3,11).line([[330,610],[330,445],[475,445],[475,610]],2.3,8).line([[500,430],[560,430],[560,510],[500,510],[500,430],[530,430],[530,510]],2.1,6); result.push(s.points);
+  s = new SandSketch(); s.disc(1030,190,78); mountains(s,550); s.waves(610,16); for(let i=0;i<450;i++) s.points.push([280+random(i)*880,300+random(i+500)*170]); result.push(s.points);
+  s = new SandSketch(); s.disc(340,205,90).waves(650,13).person(920,570,1.08).line([[1010,690],[1150,605],[1280,655],[1440,580]],2,9).line([[420,270],[570,315],[720,360],[880,420]],.7,4); result.push(s.points);
+  s = new SandSketch(); s.disc(310,215,78).waves(670,10).person(620,600,.72).line([[1040,715],[1010,580],[1000,450],[1020,320]],2.5,18); for(let i=0;i<10;i++){const a=-2.9+i*.35;s.line([[1020,320],[1020+Math.cos(a)*150,320+Math.sin(a)*105]],2.2,13);} result.push(s.points);
+  s = new SandSketch(); s.disc(1080,185,72).line([[120,700],[120,370],[330,260],[560,370],[520,370],[520,700],[120,700]],2.1,11).person(370,600,.63).person(660,620,.44).line([[440,520],[555,478],[635,500]],2,6).line([[60,735],[1380,735]],1.5,7); result.push(s.points);
+  s = new SandSketch(); s.disc(1080,200,75).line([[0,190],[230,200],[420,115],[650,175],[835,75]],2.2,16); for(let i=0;i<7;i++) leaf(s,170+i*120,175+Math.sin(i)*50,.35+random(i)*.3,(random(i+8)-.5)*1.4); leaf(s,720,550,.95,1.8); s.waves(710,5); result.push(s.points);
+  s = new SandSketch(); s.disc(720,225,112); mountains(s); s.waves(660,8).person(350,620,.46).person(1090,620,.46).ring(720,465,305,6,950); result.push(s.points);
+  return result;
+};
 
 export class SandPainter {
   private ctx: CanvasRenderingContext2D;
-  private w = 0;
-  private h = 0;
-  private scale = 1;
+  private width = 0;
+  private height = 0;
+  private ratio = 1;
+  private targets = buildScenes();
+  private grains: Grain[] = Array.from({ length: GRAINS }, (_, i) => ({ x: random(i*3)*DESIGN_W, y: -80-random(i*3+1)*420, size: .55+random(i*3+2)*2.1, tone: random(i+9100) }));
 
   constructor(private canvas: HTMLCanvasElement) {
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Canvas 2D is unavailable");
-    this.ctx = ctx;
+    const context = canvas.getContext("2d"); if (!context) throw new Error("Canvas 2D is unavailable"); this.ctx = context;
   }
 
   resize(width = this.canvas.clientWidth, height = this.canvas.clientHeight, dpr = Math.min(devicePixelRatio, 2)) {
-    this.w = width; this.h = height; this.scale = Math.min(width / 1440, height / 900);
-    this.canvas.width = Math.round(width * dpr); this.canvas.height = Math.round(height * dpr);
-    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this.width = width; this.height = height; this.ratio = Math.min(width / DESIGN_W, height / DESIGN_H);
+    this.canvas.width = Math.round(width * dpr); this.canvas.height = Math.round(height * dpr); this.ctx.setTransform(dpr,0,0,dpr,0,0);
   }
 
   render(progress: number) {
-    const c = this.ctx, w = this.w, h = this.h;
-    const stage = clamp(progress) * scenes.length;
-    const scene = Math.min(scenes.length - 1, Math.floor(stage));
-    const local = stage - scene;
-    const fade = Math.min(1, local * 3.2, (1 - local) * 4.5);
-    const glow = c.createRadialGradient(w * .5, h * .42, 0, w * .5, h * .45, Math.max(w, h) * .72);
-    glow.addColorStop(0, "#b87d3e"); glow.addColorStop(.45, "#76502e"); glow.addColorStop(1, "#26150e");
-    c.fillStyle = glow; c.fillRect(0, 0, w, h);
-    c.save(); c.globalAlpha = .16;
-    for (let i=0;i<900;i++) { const x=rand(i)*w, y=rand(i+999)*h; c.fillStyle=i%3?"#f6ce8c":"#28140b"; c.fillRect(x,y,rand(i+42)*1.5+.3,rand(i+77)*1.5+.3); }
-    c.restore();
-    c.save(); c.globalAlpha = fade; c.translate(w/2,h/2); c.scale(this.scale,this.scale); c.translate(-720,-450);
-    [this.moonrise,this.house,this.landscape,this.wanderer,this.palms,this.mother,this.leaves,this.finale][scene].call(this, local);
+    const c=this.ctx, stage=clamp(progress)*scenes.length, current=Math.min(scenes.length-1,Math.floor(stage)), local=current===scenes.length-1&&progress===1?1:stage-current;
+    const glow=c.createRadialGradient(this.width*.5,this.height*.42,0,this.width*.5,this.height*.45,Math.max(this.width,this.height)*.74);
+    glow.addColorStop(0,"#d39a53"); glow.addColorStop(.46,"#865a32"); glow.addColorStop(1,"#28150d"); c.fillStyle=glow;c.fillRect(0,0,this.width,this.height);
+    this.drawLightboxDust(progress);
+    c.save();c.translate(this.width/2,this.height/2);c.scale(this.ratio,this.ratio);c.translate(-DESIGN_W/2,-DESIGN_H/2);
+    this.drawMovingSand(current,local,progress); this.drawSandBank(progress); if(local<.24&&current>0)this.drawHandSweep(local);
     c.restore();
   }
 
-  private stroke(width=7, alpha=.82) { this.ctx.strokeStyle=`rgba(43,22,13,${alpha})`; this.ctx.lineWidth=width; this.ctx.lineCap="round"; this.ctx.lineJoin="round"; }
-  private path(points:number[][], reveal=1, width=7) {
-    const c=this.ctx, count=Math.max(2,Math.floor(points.length*clamp(reveal))); this.stroke(width); c.beginPath(); c.moveTo(points[0][0],points[0][1]);
-    for(let i=1;i<count;i++) c.lineTo(points[i][0],points[i][1]); c.stroke();
-    for(let i=0;i<count*3;i++) { const p=points[Math.floor(rand(i+count)*count)]; c.fillStyle=`rgba(41,20,12,${.18+rand(i+7)*.4})`; c.beginPath(); c.arc(p[0]+(rand(i+21)-.5)*width*2,p[1]+(rand(i+49)-.5)*width*2,rand(i+82)*2.2+.3,0,TAU); c.fill(); }
+  private point(scene: number, index: number): Point {
+    const points=this.targets[clamp(scene,0,this.targets.length-1)]; return points[index%points.length];
   }
-  private moon(x:number,y:number,r:number,alpha=1) {
-    const c=this.ctx; c.save(); c.globalAlpha=alpha; c.shadowColor="rgba(255,224,166,.7)"; c.shadowBlur=50; c.fillStyle="#edca8c"; c.beginPath(); c.arc(x,y,r,0,TAU); c.fill(); c.shadowBlur=0;
-    for(let i=0;i<75;i++){ const a=rand(i)*TAU, rr=Math.sqrt(rand(i+80))*r*.88; c.fillStyle=`rgba(89,49,25,${rand(i+30)*.16})`; c.beginPath(); c.arc(x+Math.cos(a)*rr,y+Math.sin(a)*rr,rand(i+8)*4+.5,0,TAU); c.fill(); } c.restore();
-  }
-  private mountains(offset=0) { this.path([[0,570],[120,510],[210,550],[340,435],[465,540],[590,470],[720,550],[860,455],[1010,545],[1145,480],[1280,545],[1440,500]],1,6); this.ctx.save(); this.ctx.globalAlpha=.35; this.ctx.translate(0,65+offset); this.path([[0,570],[150,490],[270,555],[420,480],[590,560],[780,500],[930,555],[1100,475],[1280,550],[1440,505]],1,4); this.ctx.restore(); }
-  private water(y=650) { const c=this.ctx; for(let i=0;i<28;i++){ const yy=y+i*8; c.strokeStyle=`rgba(48,25,15,${.08+(i%4)*.04})`; c.lineWidth=2+rand(i)*3; c.beginPath(); for(let x=-20;x<1460;x+=30){ const wave=Math.sin(x*.018+i*.7)*5; x===-20?c.moveTo(x,yy+wave):c.lineTo(x,yy+wave); } c.stroke(); } }
 
-  private moonrise(t:number){ this.moon(720,285,112,ease(t*2)); this.path([[210,570],[340,510],[470,548],[600,465],[720,540],[840,480],[970,555],[1110,490],[1250,550]],ease((t-.18)*2),7); this.path([[520,665],[620,655],[720,670],[825,654],[930,666]],ease((t-.35)*2.2),4); }
-  private house(t:number){ this.moon(1030,210,92); this.mountains(); this.water(); const r=ease(t*2.2); this.path([[280,630],[280,365],[590,365],[590,630]],r,9); this.path([[235,380],[435,275],[635,380]],r,12); this.path([[330,610],[330,450],[470,450],[470,610]],r,8); this.ctx.fillStyle="rgba(244,203,133,.7)"; this.ctx.fillRect(487,430,62*r,78*r); this.path([[518,430],[518,508],[487,469],[549,469]],r,4); }
-  private landscape(t:number){ this.moon(1020,205,84); this.mountains(Math.sin(t*TAU)*4); this.water(610); const c=this.ctx; c.save(); c.globalAlpha=.15; c.fillStyle="#f3cb88"; c.beginPath(); c.ellipse(1020,690,75,190,0,0,TAU); c.fill(); c.restore(); for(let i=0;i<65;i++){ c.fillStyle=`rgba(60,31,18,${.04+rand(i)*.16})`; c.beginPath(); c.arc(300+rand(i)*850,310+rand(i+30)*200,rand(i+90)*12,0,TAU); c.fill(); } }
-  private person(x:number,y:number,s=1){ const c=this.ctx; this.stroke(9*s); c.beginPath(); c.arc(x,y-145*s,28*s,0,TAU); c.stroke(); this.path([[x-17*s,y-115*s],[x-35*s,y-10*s],[x-68*s,y+100*s],[x,y+65*s],[x+68*s,y+100*s],[x+33*s,y-10*s],[x+17*s,y-115*s]],1,8*s); }
-  private wanderer(t:number){ this.moon(350,210,95); this.water(650); this.person(920,570,1.05); this.path([[1010,670],[1150,600],[1260,650],[1440,570]],1,6); const c=this.ctx; c.save(); c.globalAlpha=.45; c.strokeStyle="#3a1d11"; c.setLineDash([3,18]); c.beginPath(); c.moveTo(430,260); c.quadraticCurveTo(680,360,885,425); c.stroke(); c.restore(); if(t>.55){ c.fillStyle="#e5bc79"; c.beginPath(); c.ellipse(900,425+(t-.55)*150,5,10,0,0,TAU); c.fill(); } }
-  private palms(t:number){ this.moon(310,220,82); this.water(665); const sway=Math.sin(t*TAU)*18; this.path([[1040,700],[1015,580],[1000,450],[1020+sway,325]],1,18); for(let i=0;i<9;i++){const a=-2.9+i*.36;this.path([[1020+sway,325],[1020+sway+Math.cos(a)*140,325+Math.sin(a)*100]],1,10);} this.person(620,590,.72); }
-  private mother(t:number){ this.moon(1070,190,76); this.path([[140,680],[140,350],[510,350],[510,680]],1,9); this.path([[100,370],[320,260],[555,370]],1,12); this.person(370,590,.62); this.person(660,610,.42); this.path([[450,505],[560,475],[640,490]],ease(t*2),4); this.path([[90,720],[1350,720]],1,6); }
-  private leaf(x:number,y:number,r:number,angle:number){ const c=this.ctx;c.save();c.translate(x,y);c.rotate(angle);this.stroke(4);c.beginPath();c.moveTo(0,0);c.bezierCurveTo(-50*r,-40*r,-70*r,35*r,0,80*r);c.bezierCurveTo(70*r,35*r,50*r,-40*r,0,0);c.stroke();c.beginPath();c.moveTo(0,0);c.lineTo(0,95*r);c.stroke();c.restore(); }
-  private leaves(t:number){ this.moon(1070,210,82); this.path([[0,190],[230,200],[420,120],[650,175],[820,80]],1,13); for(let i=0;i<7;i++) this.leaf(180+i*120,180+Math.sin(i)*50+ease(t)*i*12,.4+rand(i)*.3,(rand(i+8)-.5)*1.5); this.leaf(720,260+ease(t)*390,1,1.2+ease(t)*2); this.water(690); }
-  private finale(t:number){ this.moon(720,240,125); this.mountains(); this.water(650); this.person(345,610,.48); this.person(1090,610,.48); const c=this.ctx;c.save();c.globalAlpha=ease((t-.25)*2);c.strokeStyle="rgba(52,27,15,.55)";c.lineWidth=6;c.beginPath();c.arc(720,480,300,Math.PI*.18,Math.PI*.82);c.stroke();c.restore(); }
+  private drawMovingSand(scene: number, local: number, global: number) {
+    const c=this.ctx, entering=smooth(local/.3), previous=Math.max(0,scene-1);
+    for(let i=0;i<this.grains.length;i++) {
+      const grain=this.grains[i], from=scene===0?[grain.x,grain.y] as Point:this.point(previous,i*17+31), to=this.point(scene,i*17+31);
+      const delay=random(i+77)*.18, travel=smooth((entering-delay)/(1-delay));
+      const direction=random(i+1200)>.5?1:-1, arc=Math.sin(travel*Math.PI)*(65+random(i+80)*190)*direction;
+      const wind=Math.sin(global*80+i*.17)*(.7+random(i)*1.8);
+      let x=from[0]+(to[0]-from[0])*travel+arc;
+      let y=from[1]+(to[1]-from[1])*travel-Math.abs(arc)*.25;
+      if(scene===0) y=from[1]+(to[1]-from[1])*outCubic(clamp(local*1.7-delay));
+      if(travel>.93){x+=(random(i+global*2)-.5)*2+wind;y+=(random(i+3000)-.5)*2;}
+      const alpha=.28+grain.tone*.62; c.fillStyle=`rgba(${42+grain.tone*15},${22+grain.tone*8},${12+grain.tone*4},${alpha})`;
+      c.beginPath();c.arc(x,y,grain.size*(travel<.9?1.15:1),0,TAU);c.fill();
+      if(travel>.15&&travel<.9&&i%3===0){c.globalAlpha=.16;c.beginPath();c.arc(x-arc*.035,y+Math.abs(arc)*.012,grain.size*.8,0,TAU);c.fill();c.globalAlpha=1;}
+    }
+    // Loose grains keep falling even after the drawing settles.
+    for(let i=0;i<150;i++){
+      const cycle=(global*(.18+random(i)*.25)+random(i+500))%1, x=random(i+800)*DESIGN_W;
+      c.fillStyle=`rgba(61,31,16,${.12*(1-cycle)})`;c.beginPath();c.arc(x,-30+cycle*800,random(i+44)*1.7+.4,0,TAU);c.fill();
+    }
+  }
+
+  private drawSandBank(progress: number) {
+    const c=this.ctx;c.save();c.globalAlpha=.25;c.fillStyle="#3b1e10";c.beginPath();c.moveTo(0,790);
+    for(let x=0;x<=DESIGN_W;x+=30)c.lineTo(x,794+Math.sin(x*.018+progress*15)*4+random(x)*7);
+    c.lineTo(DESIGN_W,900);c.lineTo(0,900);c.fill();c.restore();
+  }
+
+  private drawHandSweep(local: number) {
+    const c=this.ctx, t=outCubic(local/.24), x=-260+t*(DESIGN_W+520);c.save();c.translate(x,360);c.rotate(-.12);
+    c.filter="blur(14px)";c.fillStyle="rgba(30,14,8,.13)";c.beginPath();c.ellipse(0,0,210,62,0,0,TAU);c.fill();c.filter="none";
+    c.strokeStyle="rgba(247,205,139,.11)";c.lineWidth=7;for(let i=-2;i<=2;i++){c.beginPath();c.moveTo(-155,i*17);c.lineTo(170,i*17);c.stroke();}c.restore();
+  }
+
+  private drawLightboxDust(progress: number) {
+    const c=this.ctx;c.save();
+    for(let i=0;i<650;i++){const x=random(i)*this.width,y=random(i+700)*this.height;c.fillStyle=i%4?"rgba(255,220,160,.07)":"rgba(30,13,7,.12)";c.fillRect(x,y,.4+random(i+22)*1.3,.4+random(i+45)*1.3);}
+    c.globalAlpha=.06+.02*Math.sin(progress*TAU);c.strokeStyle="#f8d99c";c.lineWidth=1;for(let i=0;i<10;i++){c.beginPath();c.moveTo(0,this.height*(i/10)+random(i)*20);c.bezierCurveTo(this.width*.3,random(i+5)*this.height,this.width*.7,random(i+8)*this.height,this.width,this.height*(i/10));c.stroke();}c.restore();
+  }
 }
